@@ -6,7 +6,7 @@ y sé que pronto, muy pronto, estaremos juntos de verdad.
 
 Mientras tanto, sigo aquí, amándote desde lejos.
 
-— Me encantas demasiado mi Astrid <3`;
+— Me encantas demasiado mi Astrid 💛`;
 
 // ==== Corazones flotantes de fondo ====
 function createFloatingHearts() {
@@ -55,34 +55,107 @@ function createSparkles() {
   }
 }
 
-// ==== Mariposas interactivas revoloteando ====
-const BUTTERFLIES = ['🦋', '🦋', '🦋'];
+// ==== Mariposas ====
+// Dos mariposas ancladas a la tarjeta del árbol. Cada una entra desde fuera
+// del borde, vuela lento hasta la copa, se posa y sale por el lado opuesto.
+// Los puntos de la ruta se calculan en px sobre el tamaño real de la
+// tarjeta (y se recalculan al redimensionar) porque `translate` en % sería
+// relativo a la propia mariposa, no a la tarjeta.
+const BUTTERFLY_PALETTES = [
+  { outer: '#f28c28', inner: '#ffd166', edge: '#3b2400', spots: '#fff4d6' }, // naranja tipo monarca
+  { outer: '#f7c948', inner: '#fff1a8', edge: '#4a3208', spots: '#ffffff' }, // amarilla, a tono con los girasoles
+];
+
+function butterflySvg(p, id) {
+  return `
+<svg viewBox="0 0 100 74" aria-hidden="true">
+  <defs>
+    <radialGradient id="bw${id}" cx="35%" cy="45%" r="75%">
+      <stop offset="0" stop-color="${p.inner}"/>
+      <stop offset="0.75" stop-color="${p.outer}"/>
+      <stop offset="1" stop-color="${p.edge}"/>
+    </radialGradient>
+  </defs>
+  <g class="wing wing-l">
+    <path d="M50 36 C 42 12, 16 2, 6 14 C -2 24, 10 40, 48 40 Z" fill="url(#bw${id})" stroke="${p.edge}" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M50 40 C 30 42, 10 52, 14 64 C 18 74, 40 68, 50 44 Z" fill="url(#bw${id})" stroke="${p.edge}" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M48 38 C 36 30, 24 22, 12 16 M48 38 C 34 34, 22 36, 12 38 M49 42 C 38 48, 26 56, 18 64" fill="none" stroke="${p.edge}" stroke-width="0.9" opacity="0.55"/>
+    <circle cx="14" cy="20" r="2.2" fill="${p.spots}"/><circle cx="22" cy="13" r="1.6" fill="${p.spots}"/>
+    <circle cx="20" cy="60" r="1.8" fill="${p.spots}"/>
+  </g>
+  <g class="wing wing-r">
+    <path d="M50 36 C 58 12, 84 2, 94 14 C 102 24, 90 40, 52 40 Z" fill="url(#bw${id})" stroke="${p.edge}" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M50 40 C 70 42, 90 52, 86 64 C 82 74, 60 68, 50 44 Z" fill="url(#bw${id})" stroke="${p.edge}" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M52 38 C 64 30, 76 22, 88 16 M52 38 C 66 34, 78 36, 88 38 M51 42 C 62 48, 74 56, 82 64" fill="none" stroke="${p.edge}" stroke-width="0.9" opacity="0.55"/>
+    <circle cx="86" cy="20" r="2.2" fill="${p.spots}"/><circle cx="78" cy="13" r="1.6" fill="${p.spots}"/>
+    <circle cx="80" cy="60" r="1.8" fill="${p.spots}"/>
+  </g>
+  <ellipse cx="50" cy="42" rx="2.6" ry="15" fill="${p.edge}"/>
+  <circle cx="50" cy="27" r="3.2" fill="${p.edge}"/>
+  <path d="M48 25 C 44 18, 40 14, 36 12 M52 25 C 56 18, 60 14, 64 12" fill="none" stroke="${p.edge}" stroke-width="1.2" stroke-linecap="round"/>
+  <circle cx="36" cy="12" r="1.3" fill="${p.edge}"/><circle cx="64" cy="12" r="1.3" fill="${p.edge}"/>
+</svg>`;
+}
 
 function createButterflies() {
-  const container = document.getElementById('fxBg');
-  BUTTERFLIES.forEach((emoji) => {
-    const b = document.createElement('span');
-    b.className = 'butterfly';
-    b.textContent = emoji;
-    b.style.left = 10 + Math.random() * 75 + 'vw';
-    b.style.top = 15 + Math.random() * 55 + 'vh';
-    b.style.setProperty('--fx1', (Math.random() * 60 - 30) + 'px');
-    b.style.setProperty('--fy1', (Math.random() * 40 - 50) + 'px');
-    b.style.setProperty('--fx2', (Math.random() * 60 - 30) + 'px');
-    b.style.setProperty('--fy2', (Math.random() * 40 - 60) + 'px');
-    b.style.setProperty('--fx3', (Math.random() * 60 - 30) + 'px');
-    b.style.setProperty('--fy3', (Math.random() * 40 - 40) + 'px');
-    b.style.animationDuration = 7 + Math.random() * 5 + 's, 0.3s';
-    b.style.animationDelay = Math.random() * 3 + 's, 0s';
+  const layer = document.getElementById('butterflyLayer');
+  const card = document.querySelector('.card');
+  const scene = document.querySelector('.scene');
+  const rnd = (a, b) => a + Math.random() * (b - a);
 
+  // rutas en fracciones de la tarjeta; se convierten a px en layout()
+  const routes = [
+    { fromLeft: true,  y0: 0.30, size: 36, dur: 34, delay: 0,  flap: 0.95 },
+    { fromLeft: false, y0: 0.22, size: 30, dur: 40, delay: 14, flap: 0.8 },
+  ];
+
+  const items = routes.map((r, i) => {
+    const b = document.createElement('div');
+    b.className = 'butterfly';
+    b.innerHTML = butterflySvg(BUTTERFLY_PALETTES[i % BUTTERFLY_PALETTES.length], i);
+    b.style.setProperty('--bsize', r.size + 'px');
+    b.style.setProperty('--dur', r.dur + 's');
+    b.style.setProperty('--delay', r.delay + 's');
+    b.style.setProperty('--flap', r.flap + 's');
     b.addEventListener('click', (e) => {
       e.stopPropagation();
       const rect = b.getBoundingClientRect();
       spawnTapHeart(rect.left + rect.width / 2, rect.top + rect.height / 2);
     });
-
-    container.appendChild(b);
+    layer.appendChild(b);
+    // puntos de la copa fijos por mariposa, para que la ruta no cambie en cada resize
+    const perch = { x: rnd(0.32, 0.68), y: rnd(0.16, 0.42) };
+    const perch2 = { x: rnd(0.30, 0.70), y: rnd(0.14, 0.40) };
+    return { b, r, perch, perch2 };
   });
+
+  function layout() {
+    const W = card.clientWidth;
+    // la copa vive dentro de .scene; todo el vuelo se acota a esa franja
+    const sceneH = scene.offsetTop + scene.clientHeight;
+
+    items.forEach(({ b, r, perch, perch2 }) => {
+      const size = r.size;
+      const x0 = r.fromLeft ? -size * 1.6 : W + size * 0.6; // fuera del borde
+      const y0 = sceneH * r.y0;
+      b.style.setProperty('--x0', x0 + 'px');
+      b.style.setProperty('--y0', y0 + 'px');
+
+      const wp = (n, x, y) => {
+        b.style.setProperty(`--fx${n}`, (x - x0) + 'px');
+        b.style.setProperty(`--fy${n}`, (y - y0) + 'px');
+      };
+      wp(1, W * (r.fromLeft ? 0.18 : 0.82), sceneH * 0.55);   // entra en la tarjeta
+      wp(2, W * perch.x, sceneH * perch.y);                    // se posa en la copa
+      wp(3, W * perch2.x, sceneH * perch2.y);                  // revolotea a otra flor
+      wp(4, r.fromLeft ? W + size * 0.6 : -size * 1.6, sceneH * 0.35); // sale por el otro lado
+    });
+  }
+
+  layout();
+  // recalcular cuando cambie el tamaño real de la tarjeta (giro del teléfono,
+  // carga de fuentes, etc.); más fiable que el evento resize de window
+  new ResizeObserver(layout).observe(card);
 }
 
 // ==== Corazoncitos al tocar el fondo ====
@@ -99,11 +172,221 @@ function spawnTapHeart(x, y) {
 
 function setupBackgroundTaps() {
   document.addEventListener('click', (e) => {
-    if (e.target.closest('.card') || e.target.closest('.player') || e.target.closest('.flower') || e.target.closest('.butterfly')) {
+    if (e.target.closest('.card') || e.target.closest('.player') || e.target.closest('.flower') || e.target.closest('.butterfly') || e.target.closest('.game')) {
       return;
     }
     spawnTapHeart(e.clientX, e.clientY);
   });
+}
+
+// ==== Mini juego: atrapa los girasoles ====
+const GAME_TARGET = 15;
+const GAME_LIVES = 3;
+
+function buildSunflower(className) {
+  const el = document.createElement('div');
+  el.className = className;
+  for (let i = 0; i < 8; i++) {
+    const petal = document.createElement('div');
+    petal.className = 'petal';
+    petal.style.setProperty('--i', i);
+    el.appendChild(petal);
+  }
+  const center = document.createElement('div');
+  center.className = 'center';
+  el.appendChild(center);
+  return el;
+}
+
+function setupGame() {
+  const game = document.getElementById('game');
+  const area = document.getElementById('gameArea');
+  const screen = document.getElementById('gameScreen');
+  const title = document.getElementById('gameTitle');
+  const text = document.getElementById('gameText');
+  const startBtn = document.getElementById('gameStart');
+  const openBtn = document.getElementById('gameBtn');
+  const closeBtn = document.getElementById('gameClose');
+  const scoreEl = document.getElementById('gameScore');
+  const livesEl = document.getElementById('gameLives');
+
+  let running = false;
+  let score = 0;
+  let lives = GAME_LIVES;
+  let flowers = [];
+  let lastTime = 0;
+  let spawnTimer = 0;
+  let timer = 0;
+
+  function flowerSize() {
+    return Math.min(56, Math.max(42, area.clientWidth * 0.12));
+  }
+
+  function updateHud() {
+    scoreEl.textContent = `🌻 ${score} / ${GAME_TARGET}`;
+    livesEl.textContent = '❤️'.repeat(lives) + '🖤'.repeat(GAME_LIVES - lives);
+  }
+
+  function showPoints(x, y, label) {
+    const p = document.createElement('span');
+    p.className = 'game-points';
+    p.textContent = label;
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    area.appendChild(p);
+    setTimeout(() => p.remove(), 850);
+  }
+
+  function spawn() {
+    const size = flowerSize();
+    const el = buildSunflower('game-flower');
+    el.style.setProperty('--gf-size', size + 'px');
+    const maxX = Math.max(1, area.clientWidth - size);
+    const x = Math.random() * maxX;
+    // la velocidad sube con el puntaje para que se vuelva más retador
+    const speed = 140 + score * 18 + Math.random() * 80;
+    // a partir de la mitad, algunas flores se balancean de lado a lado
+    const sways = score >= 5 && Math.random() < 0.55;
+    const f = {
+      el, x, baseX: x, maxX, y: -size, size, speed,
+      rot: Math.random() * 360, spin: (Math.random() - 0.5) * 160,
+      swayAmp: sways ? 30 + Math.random() * 50 : 0,
+      swayFreq: 1.5 + Math.random() * 1.5,
+      swayPhase: Math.random() * Math.PI * 2,
+      age: 0, done: false,
+    };
+    el.style.transform = `translate(${x}px, ${f.y}px) rotate(${f.rot}deg)`;
+
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!running || f.done) return;
+      f.done = true;
+      score++;
+      updateHud();
+      el.classList.add('caught');
+      setTimeout(() => el.remove(), 380);
+      const rect = el.getBoundingClientRect();
+      const areaRect = area.getBoundingClientRect();
+      showPoints(rect.left - areaRect.left + rect.width / 2, rect.top - areaRect.top + rect.height / 2, '+1 💛');
+      spawnTapHeart(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      if (score >= GAME_TARGET) finish(true);
+    });
+
+    area.appendChild(el);
+    flowers.push(f);
+  }
+
+  function loseLife() {
+    lives--;
+    updateHud();
+    area.classList.remove('hit');
+    void area.offsetWidth;
+    area.classList.add('hit');
+    if (lives <= 0) finish(false);
+  }
+
+  // bucle con setInterval + delta real en vez de requestAnimationFrame:
+  // rAF se congela en pestañas/paneles en segundo plano y el juego se quedaría
+  // detenido sin aviso
+  function loop() {
+    if (!running) return;
+    const ts = performance.now();
+    const dt = Math.min(0.05, (ts - lastTime) / 1000);
+    lastTime = ts;
+
+    spawnTimer += dt;
+    const interval = Math.max(0.38, 1.1 - score * 0.055);
+    if (spawnTimer >= interval) {
+      spawn();
+      // de vez en cuando caen dos a la vez cuando ya vas avanzado
+      if (score >= 8 && Math.random() < 0.3) spawn();
+      spawnTimer = 0;
+    }
+
+    const floor = area.clientHeight;
+    flowers = flowers.filter((f) => {
+      if (f.done) return false;
+      f.age += dt;
+      f.y += f.speed * dt;
+      f.rot += f.spin * dt;
+      if (f.swayAmp) {
+        f.x = Math.min(f.maxX, Math.max(0, f.baseX + Math.sin(f.age * f.swayFreq + f.swayPhase) * f.swayAmp));
+      }
+      f.el.style.transform = `translate(${f.x}px, ${f.y}px) rotate(${f.rot}deg)`;
+      if (f.y > floor) {
+        f.done = true;
+        f.el.remove();
+        loseLife();
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function clearFlowers() {
+    flowers.forEach((f) => f.el.remove());
+    flowers = [];
+    area.querySelectorAll('.game-flower, .game-points').forEach((n) => n.remove());
+  }
+
+  function start() {
+    score = 0;
+    lives = GAME_LIVES;
+    spawnTimer = 0.9; // que el primero salga casi de inmediato
+    clearFlowers();
+    updateHud();
+    screen.hidden = true;
+    running = true;
+    lastTime = performance.now();
+    clearInterval(timer);
+    timer = setInterval(loop, 16);
+  }
+
+  function finish(won) {
+    running = false;
+    clearInterval(timer);
+    clearFlowers();
+    title.classList.toggle('win', won);
+    if (won) {
+      title.textContent = 'Ganaste mi corazón 💛';
+      text.textContent = 'Atrapaste todos los girasoles… y también a mí. Te amo, Astrid.';
+      startBtn.textContent = 'Jugar de nuevo';
+      for (let i = 0; i < 18; i++) {
+        setTimeout(() => {
+          spawnTapHeart(window.innerWidth * (0.15 + Math.random() * 0.7), window.innerHeight * (0.25 + Math.random() * 0.6));
+        }, i * 90);
+      }
+    } else {
+      title.textContent = 'Casi…';
+      text.textContent = `Atrapaste ${score} de ${GAME_TARGET}. Mi corazón sigue aquí esperándote, ¿lo intentas otra vez?`;
+      startBtn.textContent = 'Intentar de nuevo';
+    }
+    screen.hidden = false;
+  }
+
+  function open() {
+    title.classList.remove('win');
+    title.textContent = 'Atrapa los girasoles';
+    text.textContent = `Toca los girasoles antes de que lleguen al suelo. Atrapa ${GAME_TARGET} y descubre la sorpresa.`;
+    startBtn.textContent = 'Jugar';
+    updateHud();
+    screen.hidden = false;
+    game.hidden = false;
+    document.body.classList.add('game-open');
+  }
+
+  function close() {
+    running = false;
+    clearInterval(timer);
+    clearFlowers();
+    game.hidden = true;
+    document.body.classList.remove('game-open');
+  }
+
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  startBtn.addEventListener('click', start);
 }
 
 // ==== Girasoles en forma de corazón (ecuación paramétrica) ====
@@ -166,65 +449,63 @@ function createFlowers() {
   const scale = 7.8;
   const points = [];
 
-  // criterio de "dentro del corazón", con un margen de tolerancia para no
-  // descartar de más los puntos que van justo sobre el contorno
-  function insideHeartLoose(x, y) {
-    const eq = Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y;
-    return eq <= 0.15;
+  // Una sola definición del corazón (curva paramétrica) para TODO: contorno,
+  // relleno y filtro de ramas. Antes el relleno usaba la fórmula implícita
+  // (x²+y²-1)³ = x²y³, cuyos lóbulos son ~70% más altos que los de esta
+  // curva, y por eso quedaban girasoles sueltos por encima del corazón.
+  // Coordenadas relativas al centro; y crece hacia abajo (como en pantalla).
+  function heartPoint(t, f = 1) {
+    return {
+      x: 16 * Math.pow(Math.sin(t), 3) * f,
+      y: -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * f,
+    };
   }
 
-  // girasoles a lo largo de cada rama (absolutos, en coords del viewBox),
-  // descartando los que caigan fuera del contorno del corazón
+  // polígono del contorno para las pruebas punto-dentro (ray casting)
+  const outline = [];
+  for (let t = 0; t < Math.PI * 2; t += 0.05) outline.push(heartPoint(t));
+  function insideOutline(x, y, f = 1) {
+    let inside = false;
+    for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) {
+      const xi = outline[i].x * f, yi = outline[i].y * f;
+      const xj = outline[j].x * f, yj = outline[j].y * f;
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pushRelative(x, y) {
+    points.push({ px: centerX + x * scale, py: centerY + y * scale });
+  }
+
+  // girasoles a lo largo de cada rama (coords del viewBox), solo los que
+  // quedan dentro del corazón (margen del 6% para los que van justo al borde)
   BRANCHES.forEach((b) => {
     for (let t = 0.35; t <= 1; t += 0.13) {
       const pt = cubicBezier(b.p0, b.p1, b.p2, b.p3, t);
       const rx = (pt.x - centerX) / scale;
       const ry = (pt.y - centerY) / scale;
-      if (insideHeartLoose(rx / 16, -ry / 13)) {
-        points.push({ px: pt.x, py: pt.y });
-      }
+      if (insideOutline(rx, ry, 1.06)) points.push({ px: pt.x, py: pt.y });
     }
   });
-
-  // nube con forma de corazón (relativa al centro) para rellenar volumen
-  function pushRelative(x, y) {
-    points.push({ px: centerX + x * scale, py: centerY + y * scale });
-  }
 
   // contorno principal del corazón, bien definido
   for (let t = 0; t < Math.PI * 2; t += 0.1) {
-    const x = 16 * Math.pow(Math.sin(t), 3);
-    const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-    pushRelative(x, y);
+    const p = heartPoint(t);
+    pushRelative(p.x, p.y);
   }
-  // capas intermedias para dar volumen y frondosidad
-  [0.85, 0.68, 0.5].forEach((f) => {
-    for (let t = 0; t < Math.PI * 2; t += 0.14) {
-      const x = 16 * Math.pow(Math.sin(t), 3) * f;
-      const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * f;
-      pushRelative(x, y);
+  // relleno interior: cuadrícula con jitter recortada al contorno (al 94%
+  // para no abultar el borde). Un muestreo aleatorio deja huecos; la
+  // cuadrícula garantiza cobertura uniforme. El paso (2.0) es menor que el
+  // diámetro de una flor (~2.4 en estas unidades) para que se solapen.
+  const step = 2.0;
+  const jitter = 0.55;
+  for (let gy = -11; gy <= 18; gy += step) {
+    for (let gx = -17; gx <= 17; gx += step) {
+      const x = gx + (Math.random() * 2 - 1) * jitter;
+      const y = gy + (Math.random() * 2 - 1) * jitter;
+      if (insideOutline(x, y, 0.94)) pushRelative(x, y);
     }
-  });
-  // rellenar el interior con puntos aleatorios dentro del corazón (criterio estricto)
-  function insideHeart(x, y) {
-    const eq = Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y;
-    return eq <= 0;
-  }
-  let filled = 0;
-  while (filled < 130) {
-    const nx = (Math.random() * 2 - 1) * 1.3;
-    const ny = (Math.random() * 2 - 1) * 1.3 + 0.2;
-    if (insideHeart(nx, ny)) {
-      pushRelative(nx * 16, -ny * 13);
-      filled++;
-    }
-  }
-  // refuerzo específico en el centro geométrico, donde suele quedar un
-  // hueco visible entre las ramas y la nube del corazón
-  for (let i = 0; i < 24; i++) {
-    const nx = (Math.random() * 2 - 1) * 4.5;
-    const ny = (Math.random() * 2 - 1) * 3.5;
-    pushRelative(nx, ny + 1);
   }
 
   // la copa no baja hasta el piso: se recorta un poco antes de llegar
@@ -431,4 +712,5 @@ document.addEventListener('DOMContentLoaded', () => {
   createPetals();
   typeWriter();
   setupPlayer();
+  setupGame();
 });

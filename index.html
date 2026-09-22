@@ -4,6 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flores para ti 🌻❤️</title>
+<meta name="description" content="Un corazón de girasoles que florece para ti. Tócalos, escucha nuestra canción y juega a atraparlos.">
+
+<!-- Previsualización al compartir el link (WhatsApp, Telegram, Facebook, iMessage...).
+     og:url y og:image deben ser URLs ABSOLUTAS del sitio publicado. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Flores para ti">
+<meta property="og:title" content="Flores para ti 🌻❤️">
+<meta property="og:description" content="Un corazón de girasoles que florece para ti. Tócalos, escucha nuestra canción y juega a atraparlos.">
+<meta property="og:url" content="https://yellow-flowers-astrid.vercel.app/">
+<meta property="og:image" content="https://yellow-flowers-astrid.vercel.app/og-image.jpg">
+<meta property="og:image:secure_url" content="https://yellow-flowers-astrid.vercel.app/og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Árbol con copa en forma de corazón hecha de girasoles">
+<meta property="og:locale" content="es_MX">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Flores para ti 🌻❤️">
+<meta name="twitter:description" content="Un corazón de girasoles que florece para ti.">
+<meta name="twitter:image" content="https://yellow-flowers-astrid.vercel.app/og-image.jpg">
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<meta name="theme-color" content="#b8006a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -52,14 +77,14 @@
           </linearGradient>
         </defs>
         <ellipse class="ground-shadow" cx="150" cy="316" rx="68" ry="9" />
-        <path class="root root-l" d="M150 312 C 136 317 120 318 106 312" />
-        <path class="root root-r" d="M150 312 C 164 317 180 318 194 312" />
+        <path class="root root-l" pathLength="1" d="M150 312 C 136 317 120 318 106 312" />
+        <path class="root root-r" pathLength="1" d="M150 312 C 164 317 180 318 194 312" />
         <path class="trunk" d="M140 318 C 141 290, 145 255, 147 218 L 153 218 C 155 255, 159 290, 160 318 Z" />
-        <path class="branch b1" d="M150 260 C 130 230, 110 210, 90 190" />
-        <path class="branch b2" d="M150 250 C 170 220, 190 200, 210 180" />
-        <path class="branch b3" d="M150 230 C 145 200, 140 180, 150 150" />
-        <path class="branch b4" d="M150 240 C 120 210, 100 190, 70 170" />
-        <path class="branch b5" d="M150 235 C 180 205, 200 185, 230 165" />
+        <path class="branch b1" pathLength="1" d="M150 260 C 130 230, 110 210, 90 190" />
+        <path class="branch b2" pathLength="1" d="M150 250 C 170 220, 190 200, 210 180" />
+        <path class="branch b3" pathLength="1" d="M150 230 C 145 200, 140 180, 150 150" />
+        <path class="branch b4" pathLength="1" d="M150 240 C 120 210, 100 190, 70 170" />
+        <path class="branch b5" pathLength="1" d="M150 235 C 180 205, 200 185, 230 165" />
       </svg>
       <div class="flowers" id="flowers"></div>
       <div class="petals" id="petals"></div>
@@ -67,8 +92,30 @@
 
     <div class="content">
       <p class="typewriter" id="typewriter"></p>
+      <button class="game-btn" id="gameBtn" type="button">
+        <span class="game-btn-icon">🌻</span> Atrapa los girasoles
+      </button>
     </div>
+
+    <!-- capa de mariposas anclada a la tarjeta: entran desde fuera, cruzan el árbol y salen -->
+    <div class="butterfly-layer" id="butterflyLayer"></div>
   </main>
+
+  <div class="game" id="game" hidden>
+    <div class="game-hud">
+      <span class="game-score" id="gameScore">🌻 0 / 15</span>
+      <span class="game-lives" id="gameLives">❤️❤️❤️</span>
+      <button class="game-close" id="gameClose" type="button" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="game-area" id="gameArea"></div>
+    <div class="game-screen" id="gameScreen">
+      <div class="game-card">
+        <h2 class="game-title" id="gameTitle">Atrapa los girasoles</h2>
+        <p class="game-text" id="gameText">Toca los girasoles antes de que lleguen al suelo. Atrapa 15 y descubre la sorpresa.</p>
+        <button class="game-start" id="gameStart" type="button">Jugar</button>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>

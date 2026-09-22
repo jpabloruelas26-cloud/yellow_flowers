@@ -103,7 +103,7 @@ html, body {
   color: var(--pink, #ff5da8);
   font-size: 1.2rem;
   pointer-events: none;
-  z-index: 5;
+  z-index: 60;
   animation: tapHeartUp 1.1s ease-out forwards;
 }
 
@@ -309,14 +309,16 @@ input[type="range"]::-moz-range-thumb {
   to { transform: scaleY(1); }
 }
 
+/* con pathLength="1" en el SVG, dasharray/dashoffset = 1 equivale al 100%
+   del trazo, sin importar su longitud real: nada queda visible antes de tiempo */
 .root {
   fill: none;
   stroke: var(--trunk);
   stroke-width: 5;
   stroke-linecap: round;
   opacity: 0.85;
-  stroke-dasharray: 45;
-  stroke-dashoffset: 45;
+  stroke-dasharray: 1 2; /* hueco > largo del trazo: sin punto de remate visible */
+  stroke-dashoffset: 1;
   animation: grow 0.9s ease-out forwards;
   animation-delay: 1.3s;
 }
@@ -335,8 +337,8 @@ input[type="range"]::-moz-range-thumb {
 
 .branch {
   stroke-width: 6;
-  stroke-dasharray: 90;
-  stroke-dashoffset: 90;
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1;
   animation: grow 1.2s ease-out forwards;
 }
 
@@ -356,29 +358,74 @@ input[type="range"]::-moz-range-thumb {
   z-index: 2;
 }
 
-/* mariposas que revolotean por el fondo; interactivas al click */
+/* ===== mariposas =====
+   Capa anclada a la tarjeta (coordenadas en % de la tarjeta) y por encima
+   de la escena. Cada mariposa entra desde fuera del borde, cruza la copa,
+   se posa un momento y sale por el otro lado; la vuelta al inicio ocurre
+   con opacidad 0 para que no se vea el "salto". */
+.butterfly-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  overflow: visible;
+}
+
 .butterfly {
   position: absolute;
-  font-size: clamp(14px, 4vw, 20px);
+  width: var(--bsize, 34px);
+  height: auto;
+  left: var(--x0);
+  top: var(--y0);
   cursor: pointer;
   pointer-events: auto;
+  opacity: 0;
   transform-origin: center;
-  animation: flutter 6s ease-in-out infinite, flap 0.35s ease-in-out infinite;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
-  transition: transform 0.2s ease;
+  /* vuelo con translate/rotate/opacity; el aleteo va en las alas (hijos) */
+  animation: flight var(--dur, 30s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.28));
+  will-change: translate, opacity;
 }
 
-@keyframes flap {
-  0%, 100% { transform: scaleX(1); }
-  50% { transform: scaleX(0.7); }
+.butterfly svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
 }
 
-@keyframes flutter {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(var(--fx1, 20px), var(--fy1, -14px)) rotate(8deg); }
-  50% { transform: translate(var(--fx2, -10px), var(--fy2, -26px)) rotate(-6deg); }
-  75% { transform: translate(var(--fx3, 14px), var(--fy3, -8px)) rotate(6deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
+/* alas: aleteo lento y natural, plegándose hacia el cuerpo (eje central) */
+.butterfly .wing {
+  transform-box: fill-box;
+  animation: wingFlap var(--flap, 0.9s) ease-in-out infinite alternate;
+}
+
+/* cada ala se pliega hacia el cuerpo (su borde interno); ambas en fase */
+.butterfly .wing-l { transform-origin: 100% 55%; }
+.butterfly .wing-r { transform-origin: 0% 55%; }
+
+@keyframes wingFlap {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0.28); }
+}
+
+@keyframes flight {
+  0%   { translate: 0 0; rotate: 0deg; opacity: 0; }
+  4%   { opacity: 1; }
+  22%  { translate: var(--fx1) var(--fy1); rotate: 10deg; }
+  40%  { translate: var(--fx2) var(--fy2); rotate: -6deg; }
+  /* se posa sobre las flores */
+  50%  { translate: var(--fx2) calc(var(--fy2) + 4px); rotate: 0deg; }
+  68%  { translate: var(--fx3) var(--fy3); rotate: 8deg; }
+  84%  { translate: var(--fx4) var(--fy4); rotate: -4deg; opacity: 1; }
+  90%  { translate: var(--fx4) var(--fy4); opacity: 0; }
+  100% { translate: 0 0; rotate: 0deg; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .butterfly { animation-duration: 60s; }
+  .butterfly .wing { animation-duration: 2s; }
 }
 
 .flower {
@@ -558,3 +605,245 @@ input[type="range"]::-moz-range-thumb {
   .card { border-radius: 20px; }
   .typewriter { font-size: 0.88rem; line-height: 1.55; }
 }
+
+/* ===== mini juego: atrapa los girasoles ===== */
+.game-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--yellow), #f7b733);
+  color: #3b2400;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(214, 0, 110, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(214, 0, 110, 0.3); }
+.game-btn:active { transform: scale(0.97); }
+
+.game-btn-icon {
+  display: inline-block;
+  animation: wiggle 2.2s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-12deg); }
+  50% { transform: rotate(12deg); }
+}
+
+.game {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 0%, #b8006a 0%, #5c0038 55%, #1a0011 100%);
+  color: #fff;
+  font-family: var(--font-body);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.game[hidden] { display: none; }
+
+body.game-open { overflow: hidden; }
+
+.game-hud {
+  position: relative;
+  z-index: 4; /* por encima de .game-screen para que "cerrar" siempre sea alcanzable */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.game-lives { letter-spacing: 2px; }
+
+.game-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.game-area {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* línea de "suelo" */
+.game-area::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+}
+
+.game-area.hit {
+  animation: areaFlash 0.35s ease;
+}
+
+@keyframes areaFlash {
+  0% { box-shadow: inset 0 0 0 0 rgba(255, 60, 120, 0); }
+  30% { box-shadow: inset 0 -80px 60px -40px rgba(255, 60, 120, 0.7); }
+  100% { box-shadow: inset 0 0 0 0 rgba(255, 60, 120, 0); }
+}
+
+.game-flower {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--gf-size, 48px);
+  height: var(--gf-size, 48px);
+  cursor: pointer;
+  will-change: transform;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+/* mismo look de girasol que en el árbol, pero escalado al tamaño del juego */
+.game-flower .petal {
+  position: absolute;
+  width: 38%;
+  height: 62%;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(180deg, #ffef9c, var(--yellow) 55%, var(--yellow-dark) 100%);
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  transform: translate(-50%, -100%) rotate(calc(var(--i) * 45deg));
+  transform-origin: 50% 100%;
+  box-shadow: inset 0 -2px 2px rgba(107, 75, 0, 0.3);
+}
+
+.game-flower .center {
+  position: absolute;
+  width: 48%;
+  height: 48%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8a5c26, #3b2400 75%);
+}
+
+.game-flower.caught {
+  pointer-events: none;
+  animation: caughtPop 0.35s ease-out forwards;
+}
+
+@keyframes caughtPop {
+  0% { opacity: 1; scale: 1; }
+  50% { opacity: 1; scale: 1.5; }
+  100% { opacity: 0; scale: 0.2; }
+}
+
+.game-points {
+  position: absolute;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: pointsUp 0.8s ease-out forwards;
+}
+
+@keyframes pointsUp {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  20% { opacity: 1; transform: translate(-50%, -70%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
+}
+
+.game-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 0, 15, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.game-screen[hidden] { display: none; }
+
+.game-card {
+  width: min(92vw, 380px);
+  text-align: center;
+  background: var(--letter);
+  color: #2a1a05;
+  border-radius: 24px;
+  padding: 28px 22px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: cardIn 0.4s ease-out;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+
+.game-title {
+  margin: 0 0 10px;
+  font-family: var(--font-script);
+  font-size: 2.1rem;
+  color: var(--pink);
+  line-height: 1.1;
+}
+
+.game-title.win {
+  animation: heartbeat 1.1s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.08); }
+  45% { transform: scale(1); }
+  65% { transform: scale(1.06); }
+}
+
+.game-text {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #5a4a30;
+}
+
+.game-start {
+  padding: 12px 34px;
+  border: none;
+  border-radius: 999px;
+  background: var(--pink);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(214, 0, 110, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.game-start:hover { transform: translateY(-2px); }
+.game-start:active { transform: scale(0.96); }
